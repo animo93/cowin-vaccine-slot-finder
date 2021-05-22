@@ -21,6 +21,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -94,7 +95,12 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 				String deviceToken = document.getString("device_token");
 				logger.info("device_token: " + deviceToken);
 				
+				Notification notification = Notification.builder()
+						.setTitle("Test My Notification")
+						.setBody("Test My body ")
+						.build();
 				Message message = Message.builder()
+						.setNotification(notification)
 						.putData("test_key", "test_value")
 						.setToken(deviceToken)
 						.build();
