@@ -1,6 +1,8 @@
 package com.animo.cowin.cloud;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,17 +57,13 @@ public class CowinUserController implements HttpFunction{
 			}
 			
 		}catch (IllegalArgumentException ex) {
-			response.setStatusCode(400, "Please check all the required Arguments");
+			response.setStatusCode(400);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+		    writer.printf("Please check all the required Arguments "+ex.getMessage());
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to save Cowin User Details ",e);
-		}finally {
-			if(db!=null) {
-				try {
-					db.close();
-				} catch (Exception e) {
-					logger.log(Level.SEVERE, "Unable to close db connection ",e);
-				}
-			}
+			PrintWriter writer = new PrintWriter(response.getWriter());
+		    writer.printf("Please check all the required Arguments "+e.getMessage());
 		}
 	}
 
@@ -106,7 +104,19 @@ public class CowinUserController implements HttpFunction{
 					.setCredentials(getCredentials())
 					.setProjectId(projectId)
 					.build();
-			FirebaseApp.initializeApp(options);
+			
+			boolean hasBeenInitialized=false;
+			List<FirebaseApp> firebaseApps = FirebaseApp.getApps();
+			for(FirebaseApp app : firebaseApps){
+			    if(app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)){
+			        hasBeenInitialized=true;
+			        
+			    }
+			}
+			if(!hasBeenInitialized) {
+				FirebaseApp.initializeApp(options);
+			}
+				
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to get firebase client ",e);
 		}

@@ -30,3 +30,6 @@ hs_err_pid*
 
 #test properties
 *gcp-test.properties
+
+#openapi-yaml file
+*openapi.yaml

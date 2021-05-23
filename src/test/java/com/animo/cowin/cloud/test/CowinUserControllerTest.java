@@ -10,6 +10,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -64,20 +65,27 @@ public class CowinUserControllerTest {
 		logger.addHandler(LOG_HANDLER);
 		LOG_HANDLER.clear();
 	}
-	
-	//@Test
+	@Ignore
+	@Test
 	public void service_shouldReturn201() throws Exception {
-		String requestString = "{\"name\":\"Leeza\",\"emailAddress\":\"test@adf.com\",\"pinCode1\":\"723045\",\"pinCode2\":\"723532\",\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":\"45\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		String requestString2 = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"test@adf.com\",\"pinCode1\":723045,\"pinCode2\":723532,\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":45}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
+		BufferedReader reader2 = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
+		cowinUserController.service(request, response);
+		
+		Mockito.doReturn(reader2).when(request).getReader();
 		cowinUserController.service(request, response);
 	}
 	
 	@Test
+	//@Ignore
 	public void service_shouldReturn400() throws Exception {
 		String requestString = "{\"emailAddress\":\"test@adf.com\",\"pinCode1\":\"723045\",\"pinCode2\":\"723532\",\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":\"45\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
 		cowinUserController.service(request, response);
+		//Truth.assertThat(response.getWriter()).
 	}
 }
