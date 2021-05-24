@@ -7,8 +7,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
@@ -50,21 +53,59 @@ public class CowinUserController implements HttpFunction{
 			
 			CowinUserBean cowinUserBean = populateUser(requestJson);
 			db = initializeFirestore();
+
+			validateAndInsertDetails(db,cowinUserBean,response);
 			
-			String docId = saveCowinUserDetails(db,cowinUserBean);
-			if(docId!=null) {
-				response.setStatusCode(201);
-			}
 			
 		}catch (IllegalArgumentException ex) {
 			response.setStatusCode(400);
 			PrintWriter writer = new PrintWriter(response.getWriter());
-		    writer.printf("Please check all the required Arguments "+ex.getMessage());
+		    writer.printf("{\"message\":\"Please check all the required Arguments "+ex.getMessage()+"\"}");
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to save Cowin User Details ",e);
+			response.setStatusCode(500);
 			PrintWriter writer = new PrintWriter(response.getWriter());
-		    writer.printf("Please check all the required Arguments "+e.getMessage());
+		    writer.printf("{\"message\":\"Internal sever error "+e.getMessage()+"\"}");
 		}
+	}
+
+	private void validateAndInsertDetails(Firestore db, CowinUserBean cowinUserBean, HttpResponse response) throws InterruptedException, ExecutionException, IOException {
+		
+		String collection = getCollection();
+		logger.info("Collection name is "+collection);
+		
+		ApiFuture<QuerySnapshot> queryByEmail = db.collection(collection)
+				.whereEqualTo("email_address", cowinUserBean.getEmailAddress())
+				.get();
+
+		
+		QuerySnapshot querySnapshotByEmail = queryByEmail.get();
+		List<QueryDocumentSnapshot> documentsByEmail = querySnapshotByEmail.getDocuments();
+		logger.info("Size of documents "+querySnapshotByEmail.size());
+		if(documentsByEmail.isEmpty()) {
+			String docId = saveCowinUserDetails(db,cowinUserBean);
+			if(docId!=null) {
+				response.setStatusCode(201);
+				PrintWriter writer = new PrintWriter(response.getWriter());
+			    writer.printf("{\"message\":\"User Added successfully\"}");
+			}
+		}else {
+			String foundDocumentId = documentsByEmail.get(0).getId();
+			updateCowinUserDetails(db, cowinUserBean, foundDocumentId);
+			
+			response.setStatusCode(200);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+		    writer.printf("{\"message\":\"User Updated successfully\"}");
+		}
+		
+	}
+
+	private void updateCowinUserDetails(Firestore db, CowinUserBean cowinUserBean, String foundDocumentId) throws InterruptedException, ExecutionException {
+		db.collection(getCollection())
+				.document(foundDocumentId)
+				.update(cowinUserBean.getUserBeanMap())
+				.get();
+		logger.info("Document "+foundDocumentId+" updated successfully ");
 	}
 
 	private String saveCowinUserDetails(Firestore db, CowinUserBean cowinUserBean) throws InterruptedException, ExecutionException {

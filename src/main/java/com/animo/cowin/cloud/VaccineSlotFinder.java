@@ -57,7 +57,18 @@ public class VaccineSlotFinder implements BackgroundFunction<PubSubMessage>{
 					.setCredentials(getCredentials())
 					.setProjectId(projectId)
 					.build();
-			FirebaseApp.initializeApp(options);
+			
+			boolean hasBeenInitialized=false;
+			List<FirebaseApp> firebaseApps = FirebaseApp.getApps();
+			for(FirebaseApp app : firebaseApps){
+			    if(app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)){
+			        hasBeenInitialized=true;
+			        
+			    }
+			}
+			if(!hasBeenInitialized) {
+				FirebaseApp.initializeApp(options);
+			}
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to get firebase client ",e);
 		}
@@ -88,14 +99,6 @@ public class VaccineSlotFinder implements BackgroundFunction<PubSubMessage>{
 			}
 		}catch (Exception e) {
 			logger.log(Level.SEVERE,"Unable to read data ",e);
-		}finally {
-			if(db!=null) {
-				try {
-					db.close();
-				} catch (Exception e) {
-					logger.log(Level.SEVERE, "Unable to close db connection ",e);
-				}
-			}
 		}
 
 	}

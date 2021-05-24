@@ -1,11 +1,15 @@
 package com.animo.cowin.cloud.test;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.Writer;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -23,7 +27,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
 import com.google.common.testing.TestLogHandler;
-import com.google.common.truth.Truth;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CowinUserControllerTest {
@@ -37,7 +40,7 @@ public class CowinUserControllerTest {
 	
 	@Mock
 	private HttpRequest request;
-	@Spy
+	@Mock
 	private HttpResponse response;
 	
 	private static final Logger logger = Logger.getLogger(CowinUserController.class.getName());
@@ -61,31 +64,65 @@ public class CowinUserControllerTest {
 		InputStream serviceAccount = new FileInputStream(credentialFilePath);
 		GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
 		Mockito.doReturn(credentials).when(cowinUserController).getCredentials();
+		
+		Mockito.doReturn(new BufferedWriter(new Writer() {
+			
+			@Override
+			public void write(char[] cbuf, int off, int len) throws IOException {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void flush() throws IOException {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void close() throws IOException {
+				// TODO Auto-generated method stub
+				
+			}
+		})).when(response).getWriter();
 	    
 		logger.addHandler(LOG_HANDLER);
 		LOG_HANDLER.clear();
 	}
-	@Ignore
+	//@Ignore
 	@Test
 	public void service_shouldReturn201() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
-		String requestString2 = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"test@adf.com\",\"pinCode1\":723045,\"pinCode2\":723532,\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":45}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
-		BufferedReader reader2 = new BufferedReader(new StringReader(requestString));
+		
 		Mockito.doReturn(reader).when(request).getReader();
 		cowinUserController.service(request, response);
-		
-		Mockito.doReturn(reader2).when(request).getReader();
-		cowinUserController.service(request, response);
+		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
+		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
+		assertThat(lastLogMessage).matches("Document inserted with Id.*");
 	}
 	
 	@Test
-	//@Ignore
+	@Ignore
 	public void service_shouldReturn400() throws Exception {
 		String requestString = "{\"emailAddress\":\"test@adf.com\",\"pinCode1\":\"723045\",\"pinCode2\":\"723532\",\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":\"45\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
 		cowinUserController.service(request, response);
 		//Truth.assertThat(response.getWriter()).
+	}
+	@Ignore
+	@Test
+	public void service_shouldReturn200() throws Exception {
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));
+		
+		Mockito.doReturn(reader).when(request).getReader();
+		cowinUserController.service(request, response);
+		
+		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
+		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
+		assertThat(lastLogMessage).matches("Document.*updated successfully.*");
 	}
 }
