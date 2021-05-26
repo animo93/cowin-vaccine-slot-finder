@@ -2,7 +2,10 @@ package com.animo.cowin.cloud;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,7 +30,7 @@ public class CowinUserController implements HttpFunction{
 	private static final Logger logger = Logger.getLogger(CowinUserController.class.getName());
 
 	private static final Gson gson = new Gson();
-	
+
 	public GoogleCredentials getCredentials() throws IOException {
 		return GoogleCredentials.getApplicationDefault();
 	}
@@ -40,9 +43,24 @@ public class CowinUserController implements HttpFunction{
 		return System.getenv("USER_COLLECTION_NAME");
 	}
 
+	public boolean getCORSEnabled() {
+		return Boolean.parseBoolean(System.getenv("ENABLE_CORS"));
+	}
+	
+	public String getDistrictsCollection() {
+		return System.getenv("DISTRICT_COLLECTION_NAME");
+	}
+
 	@Override
 	public void service(HttpRequest request, HttpResponse response) throws Exception {
 		Firestore db = null;
+
+		if(getCORSEnabled()) {
+			logger.info("CORS is enabled");
+			enableCORS(request, response);
+		}
+
+
 		try {
 			JsonElement requestParsed = gson.fromJson(request.getReader(), JsonElement.class);
 			JsonObject requestJson = null;
@@ -50,61 +68,121 @@ public class CowinUserController implements HttpFunction{
 			if (requestParsed != null && requestParsed.isJsonObject()) {
 				requestJson = requestParsed.getAsJsonObject();
 			}
-			
+
 			CowinUserBean cowinUserBean = populateUser(requestJson);
 			db = initializeFirestore();
 
 			validateAndInsertDetails(db,cowinUserBean,response);
-			
-			
+			insertNewDistrictCache(db,requestJson);
+
+
 		}catch (IllegalArgumentException ex) {
-			response.setStatusCode(400);
+			response.setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST);
 			PrintWriter writer = new PrintWriter(response.getWriter());
-		    writer.printf("{\"message\":\"Please check all the required Arguments "+ex.getMessage()+"\"}");
+			writer.printf("{\"message\":\"Please check all the required Arguments "+ex.getMessage()+"\"}");
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to save Cowin User Details ",e);
-			response.setStatusCode(500);
+			response.setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR);
 			PrintWriter writer = new PrintWriter(response.getWriter());
-		    writer.printf("{\"message\":\"Internal sever error "+e.getMessage()+"\"}");
+			writer.printf("{\"message\":\"Internal sever error "+e.getMessage()+"\"}");
+		}
+	}
+
+	private void insertNewDistrictCache(Firestore db, JsonObject requestJson) throws InterruptedException, ExecutionException {
+		
+		String districtCollection = getDistrictsCollection();
+		logger.info("District Collection name is "+districtCollection);
+		
+		String districtName = requestJson.get("district").getAsJsonObject().get("district_name").getAsString();
+		int districtId = requestJson.get("district").getAsJsonObject().get("district_id").getAsInt();
+		
+		logger.info("District Name is "+districtName+" and Id "+districtId);
+
+		ApiFuture<QuerySnapshot> queryByDistrictIdAndName = db.collection(districtCollection)
+				.whereEqualTo("district_id", districtId)
+				.whereEqualTo("district_name", districtName)
+				.get();
+
+
+		QuerySnapshot querySnapshotByIdAndName = queryByDistrictIdAndName.get();
+		List<QueryDocumentSnapshot> documentsByIdAndName = querySnapshotByIdAndName.getDocuments();
+		logger.info("Size of documents "+querySnapshotByIdAndName.size());
+		if(documentsByIdAndName.isEmpty()) {
+			
+			Map<String,Object> districtMap = new HashMap<String, Object>();
+			districtMap.put("district_name", districtName);
+			districtMap.put("district_id", districtId);
+			
+			String docId = saveCowinDistrict(db,districtMap);
+			if(docId!=null) {
+				logger.info("Added New district "+districtName);
+			}
+		}else {
+			logger.info("District already existing..No need to add");
+		}
+		
+	}
+
+	private String saveCowinDistrict(Firestore db, Map<String,Object> districtMap) throws InterruptedException, ExecutionException {
+		String docId = db.collection(getDistrictsCollection())
+				.add(districtMap)
+				.get()
+				.getId();
+		logger.info("District Document inserted with Id "+docId);
+		return docId;
+	}
+
+	private void enableCORS(HttpRequest request, HttpResponse response) {
+		// Set CORS headers
+		//   Allows GETs from any origin with the Content-Type
+		//   header and caches preflight response for 3600s
+		response.appendHeader("Access-Control-Allow-Origin", "*");
+
+		if ("OPTIONS".equals(request.getMethod())) {
+			response.appendHeader("Access-Control-Allow-Methods", "POST");
+			response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
+			response.appendHeader("Access-Control-Max-Age", "300");
+			response.setStatusCode(HttpURLConnection.HTTP_NO_CONTENT);
+			return;
 		}
 	}
 
 	private void validateAndInsertDetails(Firestore db, CowinUserBean cowinUserBean, HttpResponse response) throws InterruptedException, ExecutionException, IOException {
-		
+
 		String collection = getCollection();
 		logger.info("Collection name is "+collection);
-		
+
 		ApiFuture<QuerySnapshot> queryByEmail = db.collection(collection)
 				.whereEqualTo("email_address", cowinUserBean.getEmailAddress())
 				.get();
 
-		
+
 		QuerySnapshot querySnapshotByEmail = queryByEmail.get();
 		List<QueryDocumentSnapshot> documentsByEmail = querySnapshotByEmail.getDocuments();
 		logger.info("Size of documents "+querySnapshotByEmail.size());
 		if(documentsByEmail.isEmpty()) {
 			String docId = saveCowinUserDetails(db,cowinUserBean);
 			if(docId!=null) {
-				response.setStatusCode(201);
+				response.setStatusCode(HttpURLConnection.HTTP_CREATED);
 				PrintWriter writer = new PrintWriter(response.getWriter());
-			    writer.printf("{\"message\":\"User Added successfully\"}");
+				writer.printf("{\"message\":\"User Added successfully\"}");
 			}
 		}else {
 			String foundDocumentId = documentsByEmail.get(0).getId();
 			updateCowinUserDetails(db, cowinUserBean, foundDocumentId);
-			
-			response.setStatusCode(200);
+
+			response.setStatusCode(HttpURLConnection.HTTP_OK);
 			PrintWriter writer = new PrintWriter(response.getWriter());
-		    writer.printf("{\"message\":\"User Updated successfully\"}");
+			writer.printf("{\"message\":\"User Updated successfully\"}");
 		}
-		
+
 	}
 
 	private void updateCowinUserDetails(Firestore db, CowinUserBean cowinUserBean, String foundDocumentId) throws InterruptedException, ExecutionException {
 		db.collection(getCollection())
-				.document(foundDocumentId)
-				.update(cowinUserBean.getUserBeanMap())
-				.get();
+		.document(foundDocumentId)
+		.update(cowinUserBean.getUserBeanMap())
+		.get();
 		logger.info("Document "+foundDocumentId+" updated successfully ");
 	}
 
@@ -115,7 +193,7 @@ public class CowinUserController implements HttpFunction{
 				.getId();
 		logger.info("Document inserted with Id "+docId);
 		return docId;
-		
+
 	}
 
 	private CowinUserBean populateUser(JsonObject requestJson) {
@@ -124,19 +202,19 @@ public class CowinUserController implements HttpFunction{
 			cowinUserBean.setName(requestJson.get("name").getAsString());
 			cowinUserBean.setAgeLimit(requestJson.get("ageLimit").getAsInt());
 			cowinUserBean.setDeviceToken(requestJson.get("deviceToken").getAsString());
-			cowinUserBean.setDistrict(requestJson.get("district").getAsString());
+			cowinUserBean.setDistrict(requestJson.get("district").getAsJsonObject().get("district_name").getAsString());
 			cowinUserBean.setEmailAddress(requestJson.get("emailAddress").getAsString());
 			cowinUserBean.setPinCode1(requestJson.get("pinCode1").getAsInt());
 			cowinUserBean.setPinCode2(requestJson.get("pinCode2").getAsInt());
 			cowinUserBean.setState(requestJson.get("state").getAsString());
-			
+
 			return cowinUserBean;
 		}catch (Exception e) {
 			logger.log(Level.SEVERE,"Unable to populate User Bean",e);
 			throw new IllegalArgumentException(e);
 		}
 	}
-	
+
 	private Firestore initializeFirestore() throws IOException {
 		String projectId = getProjectId();
 		logger.info("Project Id "+projectId);
@@ -145,19 +223,19 @@ public class CowinUserController implements HttpFunction{
 					.setCredentials(getCredentials())
 					.setProjectId(projectId)
 					.build();
-			
+
 			boolean hasBeenInitialized=false;
 			List<FirebaseApp> firebaseApps = FirebaseApp.getApps();
 			for(FirebaseApp app : firebaseApps){
-			    if(app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)){
-			        hasBeenInitialized=true;
-			        
-			    }
+				if(app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)){
+					hasBeenInitialized=true;
+
+				}
 			}
 			if(!hasBeenInitialized) {
 				FirebaseApp.initializeApp(options);
 			}
-				
+
 		}catch (Exception e) {
 			logger.log(Level.SEVERE, "Unable to get firebase client ",e);
 		}

@@ -37,6 +37,8 @@ public class CowinUserControllerTest {
 	private String projectId;
 	private String userCollection;
 	private String credentialFilePath;
+	private boolean corsEnabled;
+	private String districtCollection;
 	
 	@Mock
 	private HttpRequest request;
@@ -57,9 +59,13 @@ public class CowinUserControllerTest {
 	    projectId = p.getProperty("project_id");  
 	    userCollection = p.getProperty("user_collection_name");  
 	    credentialFilePath = p.getProperty("credential_file_path");
+	    corsEnabled = Boolean.parseBoolean(p.getProperty("cors_enabled"));
+	    districtCollection = p.getProperty("district_collection_name");
 	    
 	    Mockito.when(cowinUserController.getProjectId()).thenReturn(projectId);
 		Mockito.when(cowinUserController.getCollection()).thenReturn(userCollection);
+		Mockito.when(cowinUserController.getCORSEnabled()).thenReturn(corsEnabled);
+		Mockito.when(cowinUserController.getDistrictsCollection()).thenReturn(districtCollection);
 		
 		InputStream serviceAccount = new FileInputStream(credentialFilePath);
 		GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
@@ -92,7 +98,7 @@ public class CowinUserControllerTest {
 	//@Ignore
 	@Test
 	public void service_shouldReturn201() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":223},\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
 		
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		
