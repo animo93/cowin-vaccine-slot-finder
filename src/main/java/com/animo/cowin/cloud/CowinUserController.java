@@ -46,7 +46,7 @@ public class CowinUserController implements HttpFunction{
 	public boolean getCORSEnabled() {
 		return Boolean.parseBoolean(System.getenv("ENABLE_CORS"));
 	}
-	
+
 	public String getDistrictsCollection() {
 		return System.getenv("DISTRICT_COLLECTION_NAME");
 	}
@@ -57,7 +57,16 @@ public class CowinUserController implements HttpFunction{
 
 		if(getCORSEnabled()) {
 			logger.info("CORS is enabled");
-			enableCORS(request, response);
+			
+			response.appendHeader("Access-Control-Allow-Origin", "*");
+
+			if ("OPTIONS".equals(request.getMethod())) {
+				response.appendHeader("Access-Control-Allow-Methods", "POST");
+				response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
+				response.appendHeader("Access-Control-Max-Age", "300");
+				response.setStatusCode(HttpURLConnection.HTTP_NO_CONTENT);
+				return;
+			}
 		}
 
 
@@ -89,13 +98,13 @@ public class CowinUserController implements HttpFunction{
 	}
 
 	private void insertNewDistrictCache(Firestore db, JsonObject requestJson) throws InterruptedException, ExecutionException {
-		
+
 		String districtCollection = getDistrictsCollection();
 		logger.info("District Collection name is "+districtCollection);
-		
+
 		String districtName = requestJson.get("district").getAsJsonObject().get("district_name").getAsString();
 		int districtId = requestJson.get("district").getAsJsonObject().get("district_id").getAsInt();
-		
+
 		logger.info("District Name is "+districtName+" and Id "+districtId);
 
 		ApiFuture<QuerySnapshot> queryByDistrictIdAndName = db.collection(districtCollection)
@@ -108,11 +117,11 @@ public class CowinUserController implements HttpFunction{
 		List<QueryDocumentSnapshot> documentsByIdAndName = querySnapshotByIdAndName.getDocuments();
 		logger.info("Size of documents "+querySnapshotByIdAndName.size());
 		if(documentsByIdAndName.isEmpty()) {
-			
+
 			Map<String,Object> districtMap = new HashMap<String, Object>();
 			districtMap.put("district_name", districtName);
 			districtMap.put("district_id", districtId);
-			
+
 			String docId = saveCowinDistrict(db,districtMap);
 			if(docId!=null) {
 				logger.info("Added New district "+districtName);
@@ -120,7 +129,7 @@ public class CowinUserController implements HttpFunction{
 		}else {
 			logger.info("District already existing..No need to add");
 		}
-		
+
 	}
 
 	private String saveCowinDistrict(Firestore db, Map<String,Object> districtMap) throws InterruptedException, ExecutionException {
@@ -130,21 +139,6 @@ public class CowinUserController implements HttpFunction{
 				.getId();
 		logger.info("District Document inserted with Id "+docId);
 		return docId;
-	}
-
-	private void enableCORS(HttpRequest request, HttpResponse response) {
-		// Set CORS headers
-		//   Allows GETs from any origin with the Content-Type
-		//   header and caches preflight response for 3600s
-		response.appendHeader("Access-Control-Allow-Origin", "*");
-
-		if ("OPTIONS".equals(request.getMethod())) {
-			response.appendHeader("Access-Control-Allow-Methods", "POST");
-			response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
-			response.appendHeader("Access-Control-Max-Age", "300");
-			response.setStatusCode(HttpURLConnection.HTTP_NO_CONTENT);
-			return;
-		}
 	}
 
 	private void validateAndInsertDetails(Firestore db, CowinUserBean cowinUserBean, HttpResponse response) throws InterruptedException, ExecutionException, IOException {

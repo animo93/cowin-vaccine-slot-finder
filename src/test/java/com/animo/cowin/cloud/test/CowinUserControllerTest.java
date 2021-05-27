@@ -95,7 +95,7 @@ public class CowinUserControllerTest {
 		logger.addHandler(LOG_HANDLER);
 		LOG_HANDLER.clear();
 	}
-	//@Ignore
+	@Ignore
 	@Test
 	public void service_shouldReturn201() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":223},\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
@@ -126,6 +126,21 @@ public class CowinUserControllerTest {
 		
 		Mockito.doReturn(reader).when(request).getReader();
 		cowinUserController.service(request, response);
+		
+		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
+		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
+		assertThat(lastLogMessage).matches("Document.*updated successfully.*");
+	}
+	
+	@Test
+	public void service_OptionsTypeshouldReturn204() throws Exception {
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));
+		
+		Mockito.doReturn(reader).when(request).getReader();
+		Mockito.doReturn("OPTIONS").when(request).getMethod();
+		cowinUserController.service(request, response);
+		
 		
 		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
 		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
