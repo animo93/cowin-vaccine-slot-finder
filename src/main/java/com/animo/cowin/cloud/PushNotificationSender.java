@@ -47,42 +47,64 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 		String message = new String(Base64.getDecoder().decode(payload.getData()));
 		logger.info("Message received "+message);	
 
-
+		
 		JsonObject jsonObject = JsonParser.parseString(message).getAsJsonObject();
-		int pincode = jsonObject.get("pincode").getAsInt();
-		int minAgeLimit = jsonObject.get("minAgeLimit").getAsInt();
-		String district = jsonObject.get("districtName").getAsString();
+		
 
 		Firestore db = initializeFirestore();
-		sendPushNotification(db,pincode,minAgeLimit,district);		
+		sendPushNotification(db,jsonObject);		
 
 	}
 
 
-	private String sendPushNotification(Firestore db, int pincode, int minAgeLimit, String district) {
+	private String sendPushNotification(Firestore db, JsonObject messageObject) {
 
 		try {
+			int pincode = messageObject.get("pincode").getAsInt();
+			int minAgeLimit = messageObject.get("minAgeLimit").getAsInt();
+			String vaccine = messageObject.get("vaccine").getAsString();
+			int availableCapacityDose1 = messageObject.get("availableCapacityDose1").getAsInt();
+			int availableCapacityDose2 = messageObject.get("availableCapacityDose2").getAsInt();
+			String centerName = messageObject.get("centerName").getAsString();
+			String date = messageObject.get("date").getAsString();
+			
+			
 			String collection = getCollection();
+			
 			logger.info("Collection name is "+collection);
 			
-			ApiFuture<QuerySnapshot> queryByPincode = db.collection(collection)
-					.whereArrayContains("preferred_pincode", pincode)
-					.get();
-
-			ApiFuture<QuerySnapshot> queryByDistrict = db.collection(collection)
-					.whereEqualTo("district", district)
-					.get();
+			Set<QueryDocumentSnapshot> set = new LinkedHashSet<QueryDocumentSnapshot>();
 			
-			QuerySnapshot querySnapshotByPincode = queryByPincode.get();
-			List<QueryDocumentSnapshot> documentsByPinCode = querySnapshotByPincode.getDocuments();
-			logger.info("Documents by Pincode "+documentsByPinCode);
+			if(availableCapacityDose1>0) {
+				ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
+						.whereArrayContains("preferred_pincode", pincode)
+						.whereEqualTo("age_limit", minAgeLimit)
+						.whereEqualTo("vaccine", vaccine)
+						.whereEqualTo("dose", "Dose1")
+						.get();
+				
+				QuerySnapshot querySnapshotByDose1 = queryByDose1.get();
+				List<QueryDocumentSnapshot> documentsByDose1 = querySnapshotByDose1.getDocuments();
+				logger.info("Documents by Dose1 "+documentsByDose1);
+				
+				set.addAll(documentsByDose1);
+			}
+			
+			if(availableCapacityDose2>0) {
+				ApiFuture<QuerySnapshot> queryByDose2 = db.collection(collection)
+						.whereArrayContains("preferred_pincode", pincode)
+						.whereEqualTo("age_limit", minAgeLimit)
+						.whereEqualTo("vaccine", vaccine)
+						.whereEqualTo("dose", "Dose2")
+						.get();
+				
+				QuerySnapshot querySnapshotByDose2 = queryByDose2.get();
+				List<QueryDocumentSnapshot> documentsByDose2 = querySnapshotByDose2.getDocuments();
+				logger.info("Documents by Dose2 "+documentsByDose2);
+				
+				set.addAll(documentsByDose2);
+			}
 
-			QuerySnapshot querySnapshotByDistrict = queryByDistrict.get();
-			List<QueryDocumentSnapshot> documentsByDistrict = querySnapshotByDistrict.getDocuments();
-			logger.info("Documents by District "+documentsByDistrict);
-
-			Set<QueryDocumentSnapshot> set = new LinkedHashSet<QueryDocumentSnapshot>(documentsByPinCode);
-			set.addAll(documentsByDistrict);
 			List<QueryDocumentSnapshot> combinedList = new ArrayList<>(set);
 
 
@@ -90,18 +112,18 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 
 				logger.info("Document_Id: " + document.getId());
 				logger.info("first_name: " + document.getString("first_name"));
-				logger.info("user_id: " + document.getString("user_id"));
+				//logger.info("user_id: " + document.getString("user_id"));
 				
 				String deviceToken = document.getString("device_token");
-				logger.info("device_token: " + deviceToken);
+				//logger.info("device_token: " + deviceToken);
 				
 				Notification notification = Notification.builder()
-						.setTitle("Test My Notification")
-						.setBody("Test My body ")
+						.setTitle("Cowin Slots Available")
+						.setBody(createNotificationBody(document,centerName,date))
 						.build();
 				Message message = Message.builder()
 						.setNotification(notification)
-						.putData("test_key", "test_value")
+						//.putData("test_key", "test_value")
 						.setToken(deviceToken)
 						.build();
 				logger.info("Going to send message "+message.toString());
@@ -114,6 +136,14 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 		}
 		return null;
 
+	}
+
+	private String createNotificationBody(QueryDocumentSnapshot document, String centerName, String date) {
+		StringBuilder builder = new StringBuilder();
+		return builder.append("Cowin Slots Available At \n")
+					.append("Center : "+centerName+" \n ")
+					.append("For Date : "+date+" \n")
+					.toString();
 	}
 
 	private Firestore initializeFirestore() throws IOException {

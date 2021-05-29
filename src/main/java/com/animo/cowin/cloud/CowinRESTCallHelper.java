@@ -112,8 +112,10 @@ public class CowinRESTCallHelper {
 					logger.info("Available capacity for session "+session.getAsJsonObject().get("session_id")+" is "+availableCapacity);
 					if(availableCapacity>0) {
 						try {
+							int availableCapacityDose1 = session.getAsJsonObject().get("available_capacity_dose1").getAsInt();
+							int availableCapacityDose2 = session.getAsJsonObject().get("available_capacity_dose2").getAsInt();
 							
-							CowinPubSubMessage message = createPubSubMessage(center, session, availableCapacity);
+							CowinPubSubMessage message = createPubSubMessage(center, session, availableCapacityDose1,availableCapacityDose2);
 							
 							getPubSubHelper().pushDataToPubSub(message);
 						} catch (InterruptedException e) {
@@ -125,15 +127,17 @@ public class CowinRESTCallHelper {
 		};
 	}
 
-	private CowinPubSubMessage createPubSubMessage(JsonElement center, JsonElement session, int availableCapacity) {
+	private CowinPubSubMessage createPubSubMessage(JsonElement center, JsonElement session, int availableCapacityDose1, int availableCapacityDose2) {
 		CowinPubSubMessage message = new CowinPubSubMessage();
-		message.setAvailableCapacity(availableCapacity);
+		message.setAvailableCapacityDose1(availableCapacityDose1);
+		message.setAvailableCapacityDose2(availableCapacityDose2);
 		message.setCenterId(center.getAsJsonObject().get("center_id").getAsInt());
 		message.setCenterName(center.getAsJsonObject().get("name").getAsString());
 		message.setDate(session.getAsJsonObject().get("date").getAsString());
 		message.setDistrictName(center.getAsJsonObject().get("district_name").getAsString());
 		message.setMinAgeLimit(session.getAsJsonObject().get("min_age_limit").getAsInt());
 		message.setPincode(center.getAsJsonObject().get("pincode").getAsInt());
+		message.setVaccine(session.getAsJsonObject().get("vaccine").getAsString());
 		return message;
 	}
 

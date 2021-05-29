@@ -73,13 +73,15 @@ public class PubSubHelperTest {
 	}
 
 	private void mockMessage() {
-		Mockito.when(message.getAvailableCapacity()).thenReturn(10);
+		Mockito.when(message.getAvailableCapacityDose1()).thenReturn(10);
+		Mockito.when(message.getAvailableCapacityDose2()).thenReturn(10);
 		Mockito.when(message.getCenterId()).thenReturn(18);
 		Mockito.when(message.getCenterName()).thenReturn("TestCenter");
 		Mockito.when(message.getDate()).thenReturn("15-05-2021");
 		Mockito.when(message.getDistrictName()).thenReturn("Cuttack");
 		Mockito.when(message.getMinAgeLimit()).thenReturn(18);
 		Mockito.when(message.getPincode()).thenReturn(751024);
+		Mockito.when(message.getVaccine()).thenReturn("COVAXIN");
 		
 	}
 

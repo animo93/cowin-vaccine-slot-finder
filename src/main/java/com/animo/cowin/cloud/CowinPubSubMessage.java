@@ -17,7 +17,10 @@ public class CowinPubSubMessage implements Serializable{
 	private String districtName; 
 	private String date; 
 	private int minAgeLimit; 
-	private int availableCapacity;
+	private int availableCapacityDose1;
+	private int availableCapacityDose2;
+	private String vaccine;
+	
 	
 	public String getCenterName() {
 		return centerName;
@@ -55,13 +58,26 @@ public class CowinPubSubMessage implements Serializable{
 	public void setMinAgeLimit(int minAgeLimit) {
 		this.minAgeLimit = minAgeLimit;
 	}
-	public int getAvailableCapacity() {
-		return availableCapacity;
-	}
-	public void setAvailableCapacity(int availableCapacity) {
-		this.availableCapacity = availableCapacity;
-	}
 	
+	
+	public int getAvailableCapacityDose1() {
+		return availableCapacityDose1;
+	}
+	public void setAvailableCapacityDose1(int availableCapacityDose1) {
+		this.availableCapacityDose1 = availableCapacityDose1;
+	}
+	public int getAvailableCapacityDose2() {
+		return availableCapacityDose2;
+	}
+	public void setAvailableCapacityDose2(int availableCapacityDose2) {
+		this.availableCapacityDose2 = availableCapacityDose2;
+	}
+	public String getVaccine() {
+		return vaccine;
+	}
+	public void setVaccine(String vaccine) {
+		this.vaccine = vaccine;
+	}
 	public String toJson() {
 		JsonObject jsonObject = new JsonObject();
 		
@@ -71,7 +87,9 @@ public class CowinPubSubMessage implements Serializable{
 		jsonObject.addProperty("districtName", getDistrictName());
 		jsonObject.addProperty("date", getDate());
 		jsonObject.addProperty("minAgeLimit", getMinAgeLimit());
-		jsonObject.addProperty("availableCapacity", getAvailableCapacity());
+		jsonObject.addProperty("availableCapacityDose1", getAvailableCapacityDose1());
+		jsonObject.addProperty("availableCapacityDose2", getAvailableCapacityDose2());
+		jsonObject.addProperty("vaccine", getVaccine());
 		
 		return jsonObject.toString();
 	}

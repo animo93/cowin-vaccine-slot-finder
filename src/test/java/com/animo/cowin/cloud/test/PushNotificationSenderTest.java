@@ -65,7 +65,7 @@ public class PushNotificationSenderTest {
 		GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
 		Mockito.doReturn(credentials).when(pushNotificationSender).getCredentials();
 		
-		String s = "{\"centerName\":\"Indoor Stadium G (18-44) Only\",\"centerId\":698016,\"pincode\":751024,\"districtName\":\"Khurda\",\"date\":\"19-05-2021\",\"minAgeLimit\":18,\"availableCapacity\":4}";
+		String s = "{\"centerName\":\"Indoor Stadium G (18-44) Only\",\"centerId\":698016,\"pincode\":751024,\"districtName\":\"Khurda\",\"date\":\"19-05-2021\",\"minAgeLimit\":18,\"availableCapacityDose1\":4,\"availableCapacityDose2\":6,\"vaccine\":\"COVAXIN\",\"dose\":\"Dose1\"}";
 		Mockito.doReturn(Base64.getEncoder().encodeToString(s.getBytes())).when(message).getData();
 		
 		//message.setData(Base64.getEncoder().encodeToString("TestJohn".getBytes(StandardCharsets.UTF_8)));

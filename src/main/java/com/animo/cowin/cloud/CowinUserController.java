@@ -145,16 +145,16 @@ public class CowinUserController implements HttpFunction{
 
 		String collection = getCollection();
 		logger.info("Collection name is "+collection);
-
-		ApiFuture<QuerySnapshot> queryByEmail = db.collection(collection)
-				.whereEqualTo("email_address", cowinUserBean.getEmailAddress())
+		
+		ApiFuture<QuerySnapshot> queryByToken = db.collection(collection)
+				.whereEqualTo("device_token", cowinUserBean.getDeviceToken())
 				.get();
 
 
-		QuerySnapshot querySnapshotByEmail = queryByEmail.get();
-		List<QueryDocumentSnapshot> documentsByEmail = querySnapshotByEmail.getDocuments();
-		logger.info("Size of documents "+querySnapshotByEmail.size());
-		if(documentsByEmail.isEmpty()) {
+		QuerySnapshot querySnapshotByToken = queryByToken.get();
+		List<QueryDocumentSnapshot> documentsByToken = querySnapshotByToken.getDocuments();
+		logger.info("Size of documents "+querySnapshotByToken.size());
+		if(documentsByToken.isEmpty()) {
 			String docId = saveCowinUserDetails(db,cowinUserBean);
 			if(docId!=null) {
 				response.setStatusCode(HttpURLConnection.HTTP_CREATED);
@@ -162,7 +162,7 @@ public class CowinUserController implements HttpFunction{
 				writer.printf("{\"message\":\"User Added successfully\"}");
 			}
 		}else {
-			String foundDocumentId = documentsByEmail.get(0).getId();
+			String foundDocumentId = documentsByToken.get(0).getId();
 			updateCowinUserDetails(db, cowinUserBean, foundDocumentId);
 
 			response.setStatusCode(HttpURLConnection.HTTP_OK);
@@ -201,6 +201,8 @@ public class CowinUserController implements HttpFunction{
 			cowinUserBean.setPinCode1(requestJson.get("pinCode1").getAsInt());
 			cowinUserBean.setPinCode2(requestJson.get("pinCode2").getAsInt());
 			cowinUserBean.setState(requestJson.get("state").getAsString());
+			cowinUserBean.setDose(requestJson.get("dose").getAsString());
+			cowinUserBean.setVaccine(requestJson.get("vaccine").getAsString());
 
 			return cowinUserBean;
 		}catch (Exception e) {

@@ -98,7 +98,7 @@ public class CowinUserControllerTest {
 	@Ignore
 	@Test
 	public void service_shouldReturn201() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":223},\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
 		
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		
@@ -118,10 +118,10 @@ public class CowinUserControllerTest {
 		cowinUserController.service(request, response);
 		//Truth.assertThat(response.getWriter()).
 	}
-	@Ignore
+	//@Ignore
 	@Test
 	public void service_shouldReturn200() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		
 		Mockito.doReturn(reader).when(request).getReader();
@@ -131,7 +131,7 @@ public class CowinUserControllerTest {
 		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
 		assertThat(lastLogMessage).matches("Document.*updated successfully.*");
 	}
-	
+	@Ignore
 	@Test
 	public void service_OptionsTypeshouldReturn204() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";

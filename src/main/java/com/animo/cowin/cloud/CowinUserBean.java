@@ -15,6 +15,8 @@ public class CowinUserBean {
 	private String state;
 	private String deviceToken;
 	private int ageLimit;
+	private String vaccine;
+	private String dose;
 	
 	public String getName() {
 		return name;
@@ -69,6 +71,18 @@ public class CowinUserBean {
 		return Arrays.asList(new Integer[] {pinCode1,pinCode2});
 	}
 	
+	public String getVaccine() {
+		return vaccine;
+	}
+	public void setVaccine(String vaccine) {
+		this.vaccine = vaccine;
+	}
+	public String getDose() {
+		return dose;
+	}
+	public void setDose(String dose) {
+		this.dose = dose;
+	}
 	public Map<String, Object> getUserBeanMap(){
 		Map<String, Object> userBeanMap = new HashMap<String, Object>();
 		userBeanMap.put("name", name);
@@ -78,7 +92,8 @@ public class CowinUserBean {
 		userBeanMap.put("preferred_pincode", getPinCode());
 		userBeanMap.put("email_address", emailAddress);
 		userBeanMap.put("age_limit", ageLimit);
-		
+		userBeanMap.put("vaccine", vaccine);
+		userBeanMap.put("dose", dose);
 		return userBeanMap;
 	}
 	
