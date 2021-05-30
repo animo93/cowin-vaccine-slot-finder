@@ -10,6 +10,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -99,10 +103,13 @@ public class CowinUserControllerTest {
 	@Test
 	public void service_shouldReturn201() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
-		
-		BufferedReader reader = new BufferedReader(new StringReader(requestString));
-		
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));		
 		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("subscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
 		cowinUserController.service(request, response);
 		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
 		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
@@ -115,16 +122,25 @@ public class CowinUserControllerTest {
 		String requestString = "{\"emailAddress\":\"test@adf.com\",\"pinCode1\":\"723045\",\"pinCode2\":\"723532\",\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":\"45\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("subscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
 		cowinUserController.service(request, response);
 		//Truth.assertThat(response.getWriter()).
 	}
-	//@Ignore
+	@Ignore
 	@Test
 	public void service_shouldReturn200() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
-		
 		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("subscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
 		cowinUserController.service(request, response);
 		
 		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
@@ -135,9 +151,13 @@ public class CowinUserControllerTest {
 	@Test
 	public void service_OptionsTypeshouldReturn204() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":\"Khurdha\",\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
-		BufferedReader reader = new BufferedReader(new StringReader(requestString));
-		
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));		
 		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("subscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
 		Mockito.doReturn("OPTIONS").when(request).getMethod();
 		cowinUserController.service(request, response);
 		
@@ -145,5 +165,40 @@ public class CowinUserControllerTest {
 		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
 		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
 		assertThat(lastLogMessage).matches("Document.*updated successfully.*");
+	}
+	
+	@Ignore
+	@Test
+	public void service_unsubscribeShouldReturn200() throws Exception {
+		String requestString = "{\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));
+		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("unsubscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
+		cowinUserController.service(request, response);
+		
+		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
+		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
+		assertThat(lastLogMessage).matches("Document deleted successfully");
+	}
+	
+	@Test
+	public void service_unsubscribeUnavailableTokenShouldReturn404() throws Exception {
+		String requestString = "{\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
+		BufferedReader reader = new BufferedReader(new StringReader(requestString));
+		Mockito.doReturn(reader).when(request).getReader();
+		
+		Map<String, List<String>> queryParams = new HashMap<String, List<String>>();
+		queryParams.put("ACTION", Arrays.asList("unsubscribe"));
+		Mockito.doReturn(queryParams).when(request).getQueryParameters();
+		
+		cowinUserController.service(request, response);
+		
+		int lastLogIndex = LOG_HANDLER.getStoredLogRecords().size()-1;
+		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
+		assertThat(lastLogMessage).matches("Document not found for deletion");
 	}
 }

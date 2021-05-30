@@ -31,6 +31,12 @@ public class CowinUserController implements HttpFunction{
 
 	private static final Gson gson = new Gson();
 
+	private static final String ACTION = "ACTION";
+
+	private static final String SUBSCRIBE = "subscribe";
+
+	private static final String UNSUBSCRIBE = "unsubscribe";
+
 	public GoogleCredentials getCredentials() throws IOException {
 		return GoogleCredentials.getApplicationDefault();
 	}
@@ -53,8 +59,7 @@ public class CowinUserController implements HttpFunction{
 
 	@Override
 	public void service(HttpRequest request, HttpResponse response) throws Exception {
-		Firestore db = null;
-
+		
 		if(getCORSEnabled()) {
 			logger.info("CORS is enabled");
 			
@@ -68,8 +73,87 @@ public class CowinUserController implements HttpFunction{
 				return;
 			}
 		}
+		
+		try {
+			Map<String, List<String>> queryParams = request.getQueryParameters();
+			logger.info("Query Params "+queryParams);
+			String action = queryParams.get(ACTION).get(0);
+			
+			if(action.equalsIgnoreCase(SUBSCRIBE)) {
+				subscribeUser(request,response);
+			}else if (action.equalsIgnoreCase(UNSUBSCRIBE)){
+				unsubscribeUser(request,response);
+			}else {
+				throw new Exception("Invalid Action Option");
+			}
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "The requested query parameters are not found ",e);
+			response.setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+			writer.printf("{\"message\":\"Please check all the required Parameters "+e.getMessage()+"\"}");
+		}
+	}
+
+	private void unsubscribeUser(HttpRequest request, HttpResponse response) throws IOException {
+		Firestore db = null;
+		try {
+			JsonElement requestParsed = gson.fromJson(request.getReader(), JsonElement.class);
+			JsonObject requestJson = null;
+
+			if (requestParsed != null && requestParsed.isJsonObject()) {
+				requestJson = requestParsed.getAsJsonObject();
+			}
+
+			String deviceToken = requestJson.get("deviceToken").getAsString();
+			db = initializeFirestore();
+
+			deleteUser(db,deviceToken,response);
 
 
+		}catch (NullPointerException ex) {
+			response.setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+			writer.printf("{\"message\":\"Please check all the required Arguments "+ex.getMessage()+"\"}");
+		}catch (Exception e) {
+			logger.log(Level.SEVERE, "Unable to delete Cowin User Details ",e);
+			response.setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+			writer.printf("{\"message\":\"Internal sever error "+e.getMessage()+"\"}");
+		}
+		
+	}
+
+	private void deleteUser(Firestore db, String deviceToken, HttpResponse response) throws InterruptedException, ExecutionException, IOException {
+		String collection = getCollection();
+		logger.info("Collection name is "+collection);
+		
+		ApiFuture<QuerySnapshot> queryByToken = db.collection(collection)
+				.whereEqualTo("device_token", deviceToken)
+				.get();
+		
+		boolean deleteFlag = false;
+		QuerySnapshot querySnapshotByToken = queryByToken.get();
+		List<QueryDocumentSnapshot> documentsByToken = querySnapshotByToken.getDocuments();
+		for(QueryDocumentSnapshot document: documentsByToken) {
+			document.getReference().delete();			
+			deleteFlag = true;
+		}
+		
+		if(deleteFlag) {
+			logger.info("Document deleted successfully");
+			response.setStatusCode(HttpURLConnection.HTTP_OK);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+			writer.printf("{\"message\":\"User Unsubscribed successfully\"}");
+		}else {
+			logger.info("Document not found for deletion");
+			response.setStatusCode(HttpURLConnection.HTTP_NOT_FOUND);
+			PrintWriter writer = new PrintWriter(response.getWriter());
+			writer.printf("{\"message\":\"User Not found for Unsubscribing \"}");
+		}
+	}
+
+	private void subscribeUser(HttpRequest request, HttpResponse response) throws IOException {
+		Firestore db = null;
 		try {
 			JsonElement requestParsed = gson.fromJson(request.getReader(), JsonElement.class);
 			JsonObject requestJson = null;
@@ -95,6 +179,7 @@ public class CowinUserController implements HttpFunction{
 			PrintWriter writer = new PrintWriter(response.getWriter());
 			writer.printf("{\"message\":\"Internal sever error "+e.getMessage()+"\"}");
 		}
+		
 	}
 
 	private void insertNewDistrictCache(Firestore db, JsonObject requestJson) throws InterruptedException, ExecutionException {
@@ -111,7 +196,6 @@ public class CowinUserController implements HttpFunction{
 				.whereEqualTo("district_id", districtId)
 				.whereEqualTo("district_name", districtName)
 				.get();
-
 
 		QuerySnapshot querySnapshotByIdAndName = queryByDistrictIdAndName.get();
 		List<QueryDocumentSnapshot> documentsByIdAndName = querySnapshotByIdAndName.getDocuments();
