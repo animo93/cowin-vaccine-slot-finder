@@ -135,7 +135,9 @@ public class CowinUserController implements HttpFunction{
 		QuerySnapshot querySnapshotByToken = queryByToken.get();
 		List<QueryDocumentSnapshot> documentsByToken = querySnapshotByToken.getDocuments();
 		for(QueryDocumentSnapshot document: documentsByToken) {
-			document.getReference().delete();			
+			String district = document.getString("district");			
+			document.getReference().delete();	
+			deleteDistrict(db,district);
 			deleteFlag = true;
 		}
 		
@@ -150,6 +152,36 @@ public class CowinUserController implements HttpFunction{
 			PrintWriter writer = new PrintWriter(response.getWriter());
 			writer.printf("{\"message\":\"User Not found for Unsubscribing \"}");
 		}
+	}
+
+	private void deleteDistrict(Firestore db,String district) {
+		String districtCollection = getDistrictsCollection();
+		ApiFuture<QuerySnapshot> queryByDistrictName = db.collection(districtCollection)
+				.whereEqualTo("district_name", district)
+				.get();
+
+		QuerySnapshot querySnapshotByName;
+		try {
+			querySnapshotByName = queryByDistrictName.get();
+			List<QueryDocumentSnapshot> documentsByName = querySnapshotByName.getDocuments();
+			if(documentsByName.size()>0) {
+				for(QueryDocumentSnapshot document:documentsByName) {
+					long currentCount = document.getLong("user_count");
+					logger.info("Current count of district "+district+ " is "+currentCount);
+					if(currentCount >1) {
+						//decrement count
+						document.getReference().update("user_count",currentCount-1);
+					}else {
+						//delete document
+						document.getReference().delete();
+						logger.info("District document deleted successfully ");
+					}
+				}
+			}
+		} catch (InterruptedException | ExecutionException e) {
+			logger.log(Level.SEVERE,"Unable to delete district cache",e);
+		}
+		
 	}
 
 	private void subscribeUser(HttpRequest request, HttpResponse response) throws IOException {
@@ -205,13 +237,19 @@ public class CowinUserController implements HttpFunction{
 			Map<String,Object> districtMap = new HashMap<String, Object>();
 			districtMap.put("district_name", districtName);
 			districtMap.put("district_id", districtId);
+			districtMap.put("user_count", 1);
 
 			String docId = saveCowinDistrict(db,districtMap);
 			if(docId!=null) {
 				logger.info("Added New district "+districtName);
 			}
 		}else {
-			logger.info("District already existing..No need to add");
+			logger.info("District already existing..Updating the user count");
+			documentsByIdAndName.forEach(document -> {
+				long currentCount= document.getLong("user_count");
+				logger.info("Current count "+currentCount);
+				document.getReference().update("user_count", currentCount+1);
+			});
 		}
 
 	}

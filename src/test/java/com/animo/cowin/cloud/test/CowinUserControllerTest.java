@@ -118,7 +118,7 @@ public class CowinUserControllerTest {
 	
 	@Test
 	@Ignore
-	public void service_shouldReturn400() throws Exception {
+	public void service_invalidBodyShouldReturn400() throws Exception {
 		String requestString = "{\"emailAddress\":\"test@adf.com\",\"pinCode1\":\"723045\",\"pinCode2\":\"723532\",\"district\":\"Cuttack\",\"state\":\"Odisha\",\"deviceToken\":\"23324323erewrw\",\"ageLimit\":\"45\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
@@ -132,7 +132,7 @@ public class CowinUserControllerTest {
 	}
 	@Ignore
 	@Test
-	public void service_shouldReturn200() throws Exception {
+	public void service_existingUsershouldReturn200() throws Exception {
 		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
@@ -167,7 +167,7 @@ public class CowinUserControllerTest {
 		assertThat(lastLogMessage).matches("Document.*updated successfully.*");
 	}
 	
-	@Ignore
+	//@Ignore
 	@Test
 	public void service_unsubscribeShouldReturn200() throws Exception {
 		String requestString = "{\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
@@ -184,7 +184,7 @@ public class CowinUserControllerTest {
 		String lastLogMessage = LOG_HANDLER.getStoredLogRecords().get(lastLogIndex).getMessage();
 		assertThat(lastLogMessage).matches("Document deleted successfully");
 	}
-	
+	@Ignore
 	@Test
 	public void service_unsubscribeUnavailableTokenShouldReturn404() throws Exception {
 		String requestString = "{\"deviceToken\":\"eVKp8OWIJzqlhJ\"}";
