@@ -67,6 +67,7 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			int availableCapacityDose2 = messageObject.get("availableCapacityDose2").getAsInt();
 			String centerName = messageObject.get("centerName").getAsString();
 			String date = messageObject.get("date").getAsString();
+			String centerId = messageObject.get("centerId").getAsString();
 			
 			
 			String collection = getCollection();
@@ -119,11 +120,13 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 				
 				Notification notification = Notification.builder()
 						.setTitle("Cowin Slots Available")
-						.setBody(createNotificationBody(document,centerName,date))
+						.setBody(createNotificationBody(centerName,date))
 						.build();
 				Message message = Message.builder()
 						.setNotification(notification)
-						//.putData("test_key", "test_value")
+						.putData("centerId", centerId)
+						.putData("centerName", centerName)
+						.putData("date", date)
 						.setToken(deviceToken)
 						.build();
 				logger.info("Going to send message "+message.toString());
@@ -138,7 +141,7 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 
 	}
 
-	private String createNotificationBody(QueryDocumentSnapshot document, String centerName, String date) {
+	private String createNotificationBody(String centerName, String date) {
 		StringBuilder builder = new StringBuilder();
 		return builder.append("Cowin Slots Available At \n")
 					.append("Center : "+centerName+" \n ")
