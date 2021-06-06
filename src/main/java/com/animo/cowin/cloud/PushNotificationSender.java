@@ -3,11 +3,15 @@ package com.animo.cowin.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -68,51 +72,27 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			String centerName = messageObject.get("centerName").getAsString();
 			String date = messageObject.get("date").getAsString();
 			String centerId = messageObject.get("centerId").getAsString();
+			String district = messageObject.get("districtName").getAsString();
 			
 			
 			String collection = getCollection();
 			
 			logger.info("Collection name is "+collection);
 			
-			Set<QueryDocumentSnapshot> set = new LinkedHashSet<QueryDocumentSnapshot>();
+			List<QueryDocumentSnapshot> combinedListByPinCode = getCombinedListByPinCode(db, pincode, minAgeLimit,
+					vaccine, availableCapacityDose1, availableCapacityDose2, collection);
 			
-			if(availableCapacityDose1>0) {
-				ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
-						.whereArrayContains("preferred_pincode", pincode)
-						.whereEqualTo("age_limit", minAgeLimit)
-						.whereEqualTo("vaccine", vaccine)
-						.whereEqualTo("dose", "Dose1")
-						.get();
-				
-				QuerySnapshot querySnapshotByDose1 = queryByDose1.get();
-				List<QueryDocumentSnapshot> documentsByDose1 = querySnapshotByDose1.getDocuments();
-				logger.info("Documents by Dose1 "+documentsByDose1);
-				
-				set.addAll(documentsByDose1);
-			}
+			List<QueryDocumentSnapshot> combinedListByDistrict = getCombinedListByDistrict(db, district, minAgeLimit,
+					vaccine, availableCapacityDose1, availableCapacityDose2, collection);
 			
-			if(availableCapacityDose2>0) {
-				ApiFuture<QuerySnapshot> queryByDose2 = db.collection(collection)
-						.whereArrayContains("preferred_pincode", pincode)
-						.whereEqualTo("age_limit", minAgeLimit)
-						.whereEqualTo("vaccine", vaccine)
-						.whereEqualTo("dose", "Dose2")
-						.get();
-				
-				QuerySnapshot querySnapshotByDose2 = queryByDose2.get();
-				List<QueryDocumentSnapshot> documentsByDose2 = querySnapshotByDose2.getDocuments();
-				logger.info("Documents by Dose2 "+documentsByDose2);
-				
-				set.addAll(documentsByDose2);
-			}
-
-			List<QueryDocumentSnapshot> combinedList = new ArrayList<>(set);
+			List<QueryDocumentSnapshot> finalList = Stream.concat(combinedListByPinCode.stream(), combinedListByDistrict.stream())
+                    .collect(Collectors.toList());
 
 
-			for (QueryDocumentSnapshot document : combinedList) {
+			for (QueryDocumentSnapshot document : finalList) {
 
 				logger.info("Document_Id: " + document.getId());
-				logger.info("first_name: " + document.getString("first_name"));
+				//logger.info("name: " + document.getString("name"));
 				//logger.info("user_id: " + document.getString("user_id"));
 				
 				String deviceToken = document.getString("device_token");
@@ -139,6 +119,87 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 		}
 		return null;
 
+	}
+
+	private List<QueryDocumentSnapshot> getCombinedListByDistrict(Firestore db, String district, int minAgeLimit,
+			String vaccine, int availableCapacityDose1, int availableCapacityDose2, String collection) throws InterruptedException, ExecutionException {
+		Set<QueryDocumentSnapshot> set = new LinkedHashSet<QueryDocumentSnapshot>();
+		
+		if(availableCapacityDose1>0) {
+			ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
+					.whereEqualTo("district", district)
+					.whereEqualTo("age_limit", minAgeLimit)
+					.whereEqualTo("vaccine", vaccine)
+					.whereEqualTo("dose", "Dose1")
+					.whereEqualTo("search_by", "district")
+					.get();
+			
+			QuerySnapshot querySnapshotByDose1 = queryByDose1.get();
+			List<QueryDocumentSnapshot> documentsByDose1 = querySnapshotByDose1.getDocuments();
+			logger.info("Documents by District Dose1 "+documentsByDose1);
+			
+			set.addAll(documentsByDose1);
+		}
+		
+		if(availableCapacityDose2>0) {
+			ApiFuture<QuerySnapshot> queryByDose2 = db.collection(collection)
+					.whereEqualTo("district", district)
+					.whereEqualTo("age_limit", minAgeLimit)
+					.whereEqualTo("vaccine", vaccine)
+					.whereEqualTo("dose", "Dose2")
+					.whereEqualTo("search_by", "district")
+					.get();
+			
+			QuerySnapshot querySnapshotByDose2 = queryByDose2.get();
+			List<QueryDocumentSnapshot> documentsByDose2 = querySnapshotByDose2.getDocuments();
+			logger.info("Documents by District Dose2 "+documentsByDose2);
+			
+			set.addAll(documentsByDose2);
+		}
+
+		List<QueryDocumentSnapshot> combinedListByPinCode = new ArrayList<>(set);
+		return combinedListByPinCode;
+	}
+
+	private List<QueryDocumentSnapshot> getCombinedListByPinCode(Firestore db, int pincode, int minAgeLimit,
+			String vaccine, int availableCapacityDose1, int availableCapacityDose2, String collection)
+			throws InterruptedException, ExecutionException {
+		Set<QueryDocumentSnapshot> set = new LinkedHashSet<QueryDocumentSnapshot>();
+		
+		if(availableCapacityDose1>0) {
+			ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
+					.whereArrayContains("preferred_pincode", pincode)
+					.whereEqualTo("age_limit", minAgeLimit)
+					.whereEqualTo("vaccine", vaccine)
+					.whereEqualTo("dose", "Dose1")
+					.whereEqualTo("search_by", "pincode")
+					.get();
+			
+			QuerySnapshot querySnapshotByDose1 = queryByDose1.get();
+			List<QueryDocumentSnapshot> documentsByDose1 = querySnapshotByDose1.getDocuments();
+			logger.info("Documents by Pincode Dose1 "+documentsByDose1);
+			
+			set.addAll(documentsByDose1);
+		}
+		
+		if(availableCapacityDose2>0) {
+			ApiFuture<QuerySnapshot> queryByDose2 = db.collection(collection)
+					.whereArrayContains("preferred_pincode", pincode)
+					.whereEqualTo("age_limit", minAgeLimit)
+					.whereEqualTo("vaccine", vaccine)
+					.whereEqualTo("dose", "Dose2")
+					.whereEqualTo("search_by", "pincode")
+					.get();
+			
+			QuerySnapshot querySnapshotByDose2 = queryByDose2.get();
+			List<QueryDocumentSnapshot> documentsByDose2 = querySnapshotByDose2.getDocuments();
+			logger.info("Documents by Pincode Dose2 "+documentsByDose2);
+			
+			set.addAll(documentsByDose2);
+		}
+
+		List<QueryDocumentSnapshot> combinedListByPinCode = new ArrayList<>(set);
+		return combinedListByPinCode;
 	}
 
 	private String createNotificationBody(String centerName, String date) {

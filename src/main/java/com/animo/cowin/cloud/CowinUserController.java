@@ -137,6 +137,7 @@ public class CowinUserController implements HttpFunction{
 		for(QueryDocumentSnapshot document: documentsByToken) {
 			String district = document.getString("district");			
 			document.getReference().delete();	
+			
 			deleteDistrict(db,district);
 			deleteFlag = true;
 		}
@@ -325,6 +326,7 @@ public class CowinUserController implements HttpFunction{
 			cowinUserBean.setState(requestJson.get("state").getAsString());
 			cowinUserBean.setDose(requestJson.get("dose").getAsString());
 			cowinUserBean.setVaccine(requestJson.get("vaccine").getAsString());
+			cowinUserBean.setSearchBy(requestJson.get("searchBy").getAsString());
 
 			return cowinUserBean;
 		}catch (Exception e) {

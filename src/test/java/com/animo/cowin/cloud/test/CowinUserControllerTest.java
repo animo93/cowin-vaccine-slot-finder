@@ -102,7 +102,7 @@ public class CowinUserControllerTest {
 	@Ignore
 	@Test
 	public void service_shouldReturn201() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc2@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurda\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\",\"searchBy\":\"district\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));		
 		Mockito.doReturn(reader).when(request).getReader();
 		
@@ -133,7 +133,7 @@ public class CowinUserControllerTest {
 	@Ignore
 	@Test
 	public void service_existingUsershouldReturn200() throws Exception {
-		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\"}";
+		String requestString = "{\"name\":\"Prateek Singhdeo\",\"emailAddress\":\"abc@gmail.com\",\"pinCode1\":751004,\"pinCode2\":751003,\"ageLimit\":45,\"state\":\"Odisha\",\"district\":{\"district_name\":\"Khurdha\",\"district_id\":446},\"deviceToken\":\"eVKp8OWIJzqlhJ\",\"dose\":\"Dose1\",\"vaccine\":\"COVAXIN\",\"searchBy\":\"district\"}";
 		BufferedReader reader = new BufferedReader(new StringReader(requestString));
 		Mockito.doReturn(reader).when(request).getReader();
 		

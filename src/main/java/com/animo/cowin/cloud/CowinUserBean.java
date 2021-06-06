@@ -17,7 +17,14 @@ public class CowinUserBean {
 	private int ageLimit;
 	private String vaccine;
 	private String dose;
+	private String searchBy;
 	
+	public String getSearchBy() {
+		return searchBy;
+	}
+	public void setSearchBy(String searchBy) {
+		this.searchBy = searchBy;
+	}
 	public String getName() {
 		return name;
 	}
@@ -94,6 +101,7 @@ public class CowinUserBean {
 		userBeanMap.put("age_limit", ageLimit);
 		userBeanMap.put("vaccine", vaccine);
 		userBeanMap.put("dose", dose);
+		userBeanMap.put("search_by", searchBy);
 		return userBeanMap;
 	}
 	
