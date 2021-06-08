@@ -24,6 +24,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import com.google.gson.JsonObject;
@@ -88,32 +89,36 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			List<QueryDocumentSnapshot> finalList = Stream.concat(combinedListByPinCode.stream(), combinedListByDistrict.stream())
                     .collect(Collectors.toList());
 
-
-			for (QueryDocumentSnapshot document : finalList) {
-
-				logger.info("Document_Id: " + document.getId());
-				//logger.info("name: " + document.getString("name"));
-				//logger.info("user_id: " + document.getString("user_id"));
-				
-				String deviceToken = document.getString("device_token");
-				//logger.info("device_token: " + deviceToken);
-				
-				Notification notification = Notification.builder()
-						.setTitle("Cowin Slots Available")
-						.setBody(createNotificationBody(centerName,date))
-						.build();
-				Message message = Message.builder()
-						.setNotification(notification)
-						.putData("centerId", centerId)
-						.putData("centerName", centerName)
-						.putData("date", date)
-						.setToken(deviceToken)
-						.build();
-				logger.info("Going to send message "+message.toString());
-				String response = FirebaseMessaging.getInstance().send(message);
-				logger.info("Message Id is "+response);
-				return response;
-			}
+			finalList.parallelStream()
+				.forEach(document -> {
+					logger.info("Document_Id: " + document.getId());
+					//logger.info("name: " + document.getString("name"));
+					//logger.info("user_id: " + document.getString("user_id"));
+					
+					String deviceToken = document.getString("device_token");
+					//logger.info("device_token: " + deviceToken);
+					
+					Notification notification = Notification.builder()
+							.setTitle("Cowin Slots Available")
+							.setBody(createNotificationBody(centerName,date))
+							.build();
+					Message message = Message.builder()
+							.setNotification(notification)
+							.putData("centerId", centerId)
+							.putData("centerName", centerName)
+							.putData("date", date)
+							.setToken(deviceToken)
+							.build();
+					logger.info("Going to send message "+message.toString());
+					String response;
+					try {
+						response = FirebaseMessaging.getInstance().send(message);
+						logger.info("Message Id is "+response);
+					} catch (FirebaseMessagingException e) {
+						logger.log(Level.SEVERE,"Unable to send Firebase Mesage ",e);
+					}
+					
+				});
 		}catch (Exception e) {
 			logger.log(Level.SEVERE,"Unable to read data ",e);
 		}
@@ -136,7 +141,7 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			
 			QuerySnapshot querySnapshotByDose1 = queryByDose1.get();
 			List<QueryDocumentSnapshot> documentsByDose1 = querySnapshotByDose1.getDocuments();
-			logger.info("Documents by District Dose1 "+documentsByDose1);
+			logger.info("Documents by District Dose1 "+documentsByDose1.size());
 			
 			set.addAll(documentsByDose1);
 		}
@@ -152,13 +157,15 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			
 			QuerySnapshot querySnapshotByDose2 = queryByDose2.get();
 			List<QueryDocumentSnapshot> documentsByDose2 = querySnapshotByDose2.getDocuments();
-			logger.info("Documents by District Dose2 "+documentsByDose2);
+			logger.info("Documents by District Dose2 "+documentsByDose2.size());
 			
 			set.addAll(documentsByDose2);
 		}
+		logger.info("Total size of set "+set.size());
 
-		List<QueryDocumentSnapshot> combinedListByPinCode = new ArrayList<>(set);
-		return combinedListByPinCode;
+		List<QueryDocumentSnapshot> combinedListByDistrict = new ArrayList<>(set);
+		logger.info("Total size of combined List "+combinedListByDistrict.size());
+		return combinedListByDistrict;
 	}
 
 	private List<QueryDocumentSnapshot> getCombinedListByPinCode(Firestore db, int pincode, int minAgeLimit,
