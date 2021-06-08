@@ -134,7 +134,6 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
 					.whereEqualTo("district", district)
 					.whereEqualTo("age_limit", minAgeLimit)
-					.whereEqualTo("vaccine", vaccine)
 					.whereEqualTo("dose", "Dose1")
 					.whereEqualTo("search_by", "district")
 					.get();
@@ -177,7 +176,6 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 			ApiFuture<QuerySnapshot> queryByDose1 = db.collection(collection)
 					.whereArrayContains("preferred_pincode", pincode)
 					.whereEqualTo("age_limit", minAgeLimit)
-					.whereEqualTo("vaccine", vaccine)
 					.whereEqualTo("dose", "Dose1")
 					.whereEqualTo("search_by", "pincode")
 					.get();
