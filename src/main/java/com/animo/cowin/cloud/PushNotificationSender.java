@@ -107,6 +107,8 @@ public class PushNotificationSender implements BackgroundFunction<PubSubMessage>
 							.putData("centerId", centerId)
 							.putData("centerName", centerName)
 							.putData("date", date)
+							.putData("minAgeLimit", String.valueOf(minAgeLimit))
+							.putData("vaccine", vaccine)
 							.setToken(deviceToken)
 							.build();
 					logger.info("Going to send message "+message.toString());
